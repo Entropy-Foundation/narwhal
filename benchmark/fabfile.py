@@ -38,7 +38,7 @@ def local(ctx, debug=True):
 
 
 @task
-def create(ctx, nodes=6):
+def create(ctx, nodes=10):
     ''' Create a testbed'''
     try:
         InstanceManager.make().create_instances(nodes)
@@ -56,7 +56,7 @@ def destroy(ctx):
 
 
 @task
-def start(ctx, max=2):
+def start(ctx, max=10):
     ''' Start at most `max` machines per data center '''
     try:
         InstanceManager.make().start_instances(max)
@@ -96,16 +96,16 @@ def remote(ctx, debug=True):
     ''' Run benchmarks on AWS '''
     bench_params = {
         'faults': 0,
-        'nodes': [4],
-        'workers': 4,
-        'collocate': False,
-        'rate': [50_000],
+        'nodes': [50],
+        'workers': 1,
+        'collocate': True,
+        'rate': [1_50_000],
         'tx_size': 512,
         'duration': 300,
         'runs': 1,
     }
     node_params = {
-        'timeout_delay': 5_000,  # ms
+        'timeout_delay': 10_000,  # ms
         'header_size': 1_000,  # bytes
         'max_header_delay': 200,  # ms
         'gc_depth': 50,  # rounds
