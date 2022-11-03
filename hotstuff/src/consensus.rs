@@ -54,7 +54,7 @@ impl Consensus {
         tx_output: Sender<Block>,
     ) {
         // NOTE: This log entry is used to compute performance.
-        parameters.log();
+        // parameters.log();
 
         let (tx_consensus, rx_consensus) = channel(CHANNEL_CAPACITY);
         let (tx_loopback, rx_loopback) = channel(CHANNEL_CAPACITY);

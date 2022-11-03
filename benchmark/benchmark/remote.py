@@ -307,6 +307,15 @@ class Bench:
         return LogParser.process(PathMaker.logs_path(), faults=faults)
 
     def run(self, bench_parameters_dict, node_parameters_dict, debug=False):
+        # logger = LogParser.process(PathMaker.logs_path(), faults=0)
+        # logger.print(PathMaker.result_file(
+        #                     0,
+        #                     10,
+        #                     1,
+        #                     True,
+        #                     1_50_000,
+        #                     512,
+        #                 ))
         assert isinstance(debug, bool)
         Print.heading('Starting remote benchmark')
         try:
@@ -357,11 +366,11 @@ class Bench:
                         logger = self._logs(committee_copy, faults)
                         logger.print(PathMaker.result_file(
                             faults,
-                            n, 
+                            n,
                             bench_parameters.workers,
                             bench_parameters.collocate,
-                            r, 
-                            bench_parameters.tx_size, 
+                            r,
+                            bench_parameters.tx_size,
                         ))
                     except (subprocess.SubprocessError, GroupException, ParseError) as e:
                         self.kill(hosts=selected_hosts)

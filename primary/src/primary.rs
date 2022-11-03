@@ -80,7 +80,7 @@ impl Primary {
 
         // Write the parameters to the logs.
         // NOTE: These log entries are needed to compute performance.
-        parameters.log();
+        // parameters.log();
 
         // Atomic variable use to synchronizer all tasks with the latest consensus round. This is only
         // used for cleanup. The only tasks that write into this variable is `GarbageCollector`.
@@ -203,15 +203,15 @@ impl Primary {
         Helper::spawn(committee.clone(), store, rx_cert_requests);
 
         // NOTE: This log entry is used to compute performance.
-        info!(
-            "Primary {} successfully booted on {}",
-            name,
-            committee
-                .primary(&name)
-                .expect("Our public key or worker id is not in the committee")
-                .primary_to_primary
-                .ip()
-        );
+        // info!(
+        //     "Primary {} successfully booted on {}",
+        //     name,
+        //     committee
+        //         .primary(&name)
+        //         .expect("Our public key or worker id is not in the committee")
+        //         .primary_to_primary
+        //         .ip()
+        // );
     }
 }
 

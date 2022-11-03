@@ -106,10 +106,10 @@ impl Connection {
         let (mut writer, mut reader) = match TcpStream::connect(self.address).await {
             Ok(stream) => Framed::new(stream, LengthDelimitedCodec::new()).split(),
             Err(e) => {
-                warn!(
-                    "{}",
-                    NetworkError::FailedToConnect(self.address, /* retry */ 0, e)
-                );
+                // warn!(
+                //     "{}",
+                //     // NetworkError::FailedToConnect(self.address, /* retry */ 0, e)
+                // );
                 return;
             }
         };

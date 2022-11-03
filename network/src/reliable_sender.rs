@@ -143,7 +143,7 @@ impl Connection {
         loop {
             match TcpStream::connect(self.address).await {
                 Ok(stream) => {
-                    info!("Outgoing connection established with {}", self.address);
+                    // info!("Outgoing connection established with {}", self.address);
 
                     // Reset the delay.
                     delay = self.retry_delay;
@@ -155,7 +155,7 @@ impl Connection {
                     warn!("{}", error);
                 }
                 Err(e) => {
-                    warn!("{}", NetworkError::FailedToConnect(self.address, retry, e));
+                    // warn!("{}", NetworkError::FailedToConnect(self.address, retry, e));
                     let timer = sleep(Duration::from_millis(delay));
                     tokio::pin!(timer);
 

@@ -53,7 +53,7 @@ impl Helper {
             let address = match self.committee.worker(&origin, &self.id) {
                 Ok(x) => x.worker_to_worker,
                 Err(e) => {
-                    warn!("Unexpected batch request: {}", e);
+                    // warn!("Unexpected batch request: {}", e);
                     continue;
                 }
             };
