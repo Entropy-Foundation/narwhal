@@ -45,7 +45,7 @@ impl Helper {
             let address = match self.committee.consensus(&origin) {
                 Ok(x) => x.consensus_to_consensus,
                 Err(e) => {
-                    warn!("Received unexpected sync request: {}", e);
+                    // warn!("Received unexpected sync request: {}", e);
                     continue;
                 }
             };

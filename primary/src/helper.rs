@@ -46,7 +46,7 @@ impl Helper {
             let address = match self.committee.primary(&origin) {
                 Ok(x) => x.primary_to_primary,
                 Err(e) => {
-                    warn!("Unexpected certificate request: {}", e);
+                    // warn!("Unexpected certificate request: {}", e);
                     continue;
                 }
             };

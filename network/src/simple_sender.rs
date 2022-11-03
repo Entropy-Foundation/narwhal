@@ -121,7 +121,7 @@ impl Connection {
             tokio::select! {
                 Some(data) = self.receiver.recv() => {
                     if let Err(e) = writer.send(data).await {
-                        warn!("{}", NetworkError::FailedToSendMessage(self.address, e));
+                        // warn!("{}", NetworkError::FailedToSendMessage(self.address, e));
                         return;
                     }
                 },
@@ -132,7 +132,7 @@ impl Connection {
                         },
                         _ => {
                             // Something has gone wrong (either the channel dropped or we failed to read from it).
-                            warn!("{}", NetworkError::FailedToReceiveAck(self.address));
+                            // warn!("{}", NetworkError::FailedToReceiveAck(self.address));
                             return;
                         }
                     }

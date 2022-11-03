@@ -148,7 +148,7 @@ impl Core {
 
             // Output the block to the top-level application.
             if let Err(e) = self.tx_output.send(block.clone()).await {
-                warn!("Failed to send block through the output channel: {}", e);
+                // warn!("Failed to send block through the output channel: {}", e);
             }
 
             // Send the payload to the committer.

@@ -54,7 +54,7 @@ impl<Handler: MessageHandler> Receiver<Handler> {
             let (socket, peer) = match listener.accept().await {
                 Ok(value) => value,
                 Err(e) => {
-                    warn!("{}", NetworkError::FailedToListen(e));
+                    // warn!("{}", NetworkError::FailedToListen(e));
                     continue;
                 }
             };
@@ -73,12 +73,12 @@ impl<Handler: MessageHandler> Receiver<Handler> {
                 match frame.map_err(|e| NetworkError::FailedToReceiveMessage(peer, e)) {
                     Ok(message) => {
                         if let Err(e) = handler.dispatch(&mut writer, message.freeze()).await {
-                            warn!("{}", e);
+                            // warn!("{}", e);
                             return;
                         }
                     }
                     Err(e) => {
-                        warn!("{}", e);
+                        // warn!("{}", e);
                         return;
                     }
                 }
