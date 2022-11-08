@@ -17,7 +17,7 @@ class AWSError(Exception):
 
 
 class InstanceManager:
-    INSTANCE_NAME = 'dag-node'
+    INSTANCE_NAME = 'bullshark-node'
     SECURITY_GROUP_NAME = 'dag'
 
     def __init__(self, settings):
@@ -110,7 +110,7 @@ class InstanceManager:
         response = client.describe_images(
             Filters=[{
                 'Name': 'description',
-                'Values': ['Canonical, Ubuntu, 20.04 LTS, amd64 focal image build on 2020-10-26']
+                'Values': ['Canonical, Ubuntu, 20.04 LTS, amd64 focal image build on 2022-09-14']
             }]
         )
         return response['Images'][0]['ImageId']
