@@ -98,7 +98,6 @@ class LogParser:
         if search(r'(?:panicked|Error)', log) is not None:
             raise ParseError('Primary(s) panicked')
 
-        print(log)
         tmp = findall(r'(.*Z) .* Created B\d+\([^ ]+\) -> ([^ ]+=)', log)
         tmp = [(d, self._to_posix(t)) for t, d in tmp]
         proposals = self._merge_results([tmp])
@@ -108,7 +107,6 @@ class LogParser:
         tmp = [(d, self._to_posix(t)) for t, d in tmp]
         commits = self._merge_results([tmp])
 
-        print(commits)
         # configs = {
         #     'header_size': int(
         #         search(r'Header size .* (\d+)', log).group(1)
