@@ -10,7 +10,7 @@
         "branch": "narwhal-hs"
     },
     "instances": {
-        "type": "m5d.8xlarge",
+        "type": "c5.4xlarge",
         "regions": ["us-east-1", "us-east-2", "us-west-2", "us-west-1", "eu-central-1"]
     }
 }

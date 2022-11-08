@@ -59,8 +59,9 @@ class LogParser:
             k: v for x in sizes for k, v in x.items() if k in self.commits
         }
 
-        # Determine whether the primary and the workers are collocated.
-        # self.collocate = set(primary_ips) == set(workers_ips)
+        # # Determine whether the primary and the workers are collocated.
+        self.collocate = True
+        #set(primary_ips) == set(workers_ips)
 
         # Check whether clients missed their target rate.
         if self.misses != 0:
@@ -163,6 +164,16 @@ class LogParser:
 
     def result(self):
 
+        # timeout_delay = self.configs[0]['timeout_delay']
+        # header_size = self.configs[0]['header_size']
+        # max_header_delay = self.configs[0]['max_header_delay']
+        # gc_depth = self.configs[0]['gc_depth']
+        # sync_retry_delay = self.configs[0]['sync_retry_delay']
+        # sync_retry_nodes = self.configs[0]['sync_retry_nodes']
+        # batch_size = self.configs[0]['batch_size']
+        # max_batch_delay = self.configs[0]['max_batch_delay']
+
+        # block_consensus_latency = self._block_consensus_latency() * 1_000
         consensus_latency = self._consensus_latency() * 1_000
         consensus_tps, consensus_bps, _ = self._consensus_throughput()
         end_to_end_tps, end_to_end_bps, duration = self._end_to_end_throughput()
@@ -173,10 +184,29 @@ class LogParser:
             '-----------------------------------------\n'
             ' SUMMARY:\n'
             '-----------------------------------------\n'
+            # ' + CONFIG:\n'
+            # f' Faults: {self.faults} node(s)\n'
+            # f' Committee size: {self.committee_size} node(s)\n'
+            # f' Worker(s) per node: {self.workers} worker(s)\n'
+            # f' Collocate primary and workers: {self.collocate}\n'
+            # f' Input rate: {sum(self.rate):,} tx/s\n'
+            # f' Transaction size: {self.size[0]:,} B\n'
+            # f' Execution time: {round(duration):,} s\n'
+            # '\n'
+            # f' Timeout delay: {timeout_delay:,} ms\n'
+            # f' Header size: {header_size:,} B\n'
+            # f' Max header delay: {max_header_delay:,} ms\n'
+            # f' GC depth: {gc_depth:,} round(s)\n'
+            # f' Sync retry delay: {sync_retry_delay:,} ms\n'
+            # f' Sync retry nodes: {sync_retry_nodes:,} node(s)\n'
+            # f' batch size: {batch_size:,} B\n'
+            # f' Max batch delay: {max_batch_delay:,} ms\n'
+            # '\n'
             ' + RESULTS:\n'
             f' Consensus TPS: {round(consensus_tps):,} tx/s\n'
             f' Consensus BPS: {round(consensus_bps):,} B/s\n'
             f' Consensus latency: {round(consensus_latency):,} ms\n'
+            # f' Block consensus latency: {round(block_consensus_latency):,} ms\n'
             '\n'
             f' End-to-end TPS: {round(end_to_end_tps):,} tx/s\n'
             f' End-to-end BPS: {round(end_to_end_bps):,} B/s\n'
@@ -202,7 +232,6 @@ class LogParser:
             with open(filename, 'r') as f:
                 data = cls.process_file(cls, f.read())
                 primaries += ["\n".join(data)]
-                print(filename)
 
         workers = []
         for filename in sorted(glob(join(directory, 'worker-*.log'))):
@@ -215,4 +244,5 @@ class LogParser:
 
         tmp = findall(r'\[(.* INFO  primary::proposer].*=)', data)
         tmp += findall(r'\[(.* INFO  hotstuff::committer].*=)', data)
+        tmp += findall(r'\[(.* INFO  hotstuff::core].*=)', data)
         return tmp
