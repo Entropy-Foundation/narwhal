@@ -1,7 +1,7 @@
 {
     "key": {
         "name": "aws",
-        "path": "/Users/asonnino/.ssh/aws"
+        "path": "/home/codezeros/.ssh/aws"
     },
     "port": 5000,
     "repo": {

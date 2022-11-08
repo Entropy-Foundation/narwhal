@@ -102,10 +102,12 @@ class LogParser:
         tmp = [(d, self._to_posix(t)) for t, d in tmp]
         proposals = self._merge_results([tmp])
 
+
         tmp = findall(r'(.*Z) .* Committed B\d+\([^ ]+\) -> ([^ ]+=)', log)
         tmp = [(d, self._to_posix(t)) for t, d in tmp]
         commits = self._merge_results([tmp])
 
+        print(commits)
         # configs = {
         #     'header_size': int(
         #         search(r'Header size .* (\d+)', log).group(1)
@@ -263,5 +265,6 @@ class LogParser:
 
         tmp = findall(r'\[(.* INFO  primary::proposer].*=)', data)
         tmp += findall(r'\[(.* INFO  hotstuff::committer].*=)', data)
+        tmp += findall(r'\[(.* INFO  consensus] Committed.*=)', data)
         tmp += findall(r'\[(.* INFO  hotstuff::core].*=)', data)
         return tmp

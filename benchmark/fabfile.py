@@ -10,7 +10,7 @@ from benchmark.remote import Bench, BenchError
 
 
 @task
-def local(ctx, debug=True):
+def local(ctx, debug=False):
     ''' Run benchmarks on localhost '''
     bench_params = {
         'faults': 0,
@@ -37,7 +37,7 @@ def local(ctx, debug=True):
 
 
 @task
-def create(ctx, nodes=20):
+def create(ctx, nodes=1):
     ''' Create a testbed'''
     try:
         InstanceManager.make().create_instances(nodes)
@@ -55,7 +55,7 @@ def destroy(ctx):
 
 
 @task
-def start(ctx, max=20):
+def start(ctx, max=1):
     ''' Start at most `max` machines per data center '''
     try:
         InstanceManager.make().start_instances(max)
@@ -95,7 +95,7 @@ def remote(ctx, debug=False):
     ''' Run benchmarks on AWS '''
     bench_params = {
         'faults': 0,
-        'nodes': [100],
+        'nodes': [5],
         'workers': 1,
         'collocate': True,
         'rate': [150_000],
