@@ -10,7 +10,7 @@ use bytes::Bytes;
 use config::{Committee, Parameters, WorkerId};
 use crypto::{Digest, PublicKey};
 use futures::sink::SinkExt as _;
-use log::{error, info, warn};
+use log::{error, info};
 use network::{MessageHandler, Receiver, Writer};
 use primary::PrimaryWorkerMessage;
 use serde::{Deserialize, Serialize};
@@ -285,7 +285,7 @@ impl MessageHandler for WorkerReceiverHandler {
                 .send((missing, requestor))
                 .await
                 .expect("Failed to send batch request"),
-            Err(e) => warn!("Serialization error: {}", e),
+            Err(_e) => println!(), //warn!("Serialization error: {}", e),
         }
         Ok(())
     }

@@ -9,7 +9,7 @@ use bytes::Bytes;
 use config::Committee;
 use crypto::Hash as _;
 use crypto::{Digest, PublicKey, SignatureService};
-use log::{debug, error, warn};
+use log::{debug, error};
 use network::{CancelHandler, ReliableSender};
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -294,11 +294,12 @@ impl Core {
 
         // Send it to the consensus layer.
         let id = certificate.header.id.clone();
-        if let Err(e) = self.tx_consensus.send(certificate).await {
-            warn!(
-                "Failed to deliver certificate {} to the consensus: {}",
-                id, e
-            );
+        if let Err(_e) = self.tx_consensus.send(certificate).await {
+            println!("{:?}", id)
+            // warn!(
+            //     "Failed to deliver certificate {} to the consensus: {}",
+            //     id, e
+            // );
         }
         Ok(())
     }
@@ -394,7 +395,8 @@ impl Core {
                     panic!("Storage failure: killing node.");
                 }
                 Err(e @ DagError::TooOld(..)) => debug!("{}", e),
-                Err(e) => warn!("{}", e),
+                // Err(e) => warn!("{}", e),
+                _ => {}
             }
 
             // Cleanup internal state.

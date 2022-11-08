@@ -2,7 +2,7 @@
 use bytes::Bytes;
 use config::{Committee, WorkerId};
 use crypto::{Digest, PublicKey};
-use log::{error, warn};
+use log::error;
 use network::SimpleSender;
 use store::Store;
 use tokio::sync::mpsc::Receiver;
@@ -52,8 +52,8 @@ impl Helper {
             // get the requestors address.
             let address = match self.committee.worker(&origin, &self.id) {
                 Ok(x) => x.worker_to_worker,
-                Err(e) => {
-                    warn!("Unexpected batch request: {}", e);
+                Err(_e) => {
+                    //warn!("Unexpected batch request: {}", e);
                     continue;
                 }
             };

@@ -1,9 +1,9 @@
 // Copyright(C) Facebook, Inc. and its affiliates.
-use crate::error::NetworkError;
+// use crate::error::NetworkError;
 use bytes::Bytes;
 use futures::sink::SinkExt as _;
 use futures::stream::StreamExt as _;
-use log::{info, warn};
+use log::info;
 use rand::prelude::SliceRandom as _;
 use rand::rngs::SmallRng;
 use rand::SeedableRng as _;
@@ -105,11 +105,11 @@ impl Connection {
         // Try to connect to the peer.
         let (mut writer, mut reader) = match TcpStream::connect(self.address).await {
             Ok(stream) => Framed::new(stream, LengthDelimitedCodec::new()).split(),
-            Err(e) => {
-                warn!(
-                    "{}",
-                    NetworkError::FailedToConnect(self.address, /* retry */ 0, e)
-                );
+            Err(_e) => {
+                // warn!(
+                //     "{}",
+                //     NetworkError::FailedToConnect(self.address, /* retry */ 0, e)
+                // );
                 return;
             }
         };
@@ -120,8 +120,8 @@ impl Connection {
             // Check if there are any new messages to send or if we get an ACK for messages we already sent.
             tokio::select! {
                 Some(data) = self.receiver.recv() => {
-                    if let Err(e) = writer.send(data).await {
-                        warn!("{}", NetworkError::FailedToSendMessage(self.address, e));
+                    if let Err(_e) = writer.send(data).await {
+                        // warn!("{}", NetworkError::FailedToSendMessage(self.address, e));
                         return;
                     }
                 },
@@ -132,7 +132,7 @@ impl Connection {
                         },
                         _ => {
                             // Something has gone wrong (either the channel dropped or we failed to read from it).
-                            warn!("{}", NetworkError::FailedToReceiveAck(self.address));
+                            // warn!("{}", NetworkError::FailedToReceiveAck(self.address));
                             return;
                         }
                     }

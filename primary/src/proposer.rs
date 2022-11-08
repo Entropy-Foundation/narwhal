@@ -6,7 +6,7 @@ use crypto::Hash as _;
 use crypto::{Digest, PublicKey, SignatureService};
 #[cfg(feature = "benchmark")]
 use log::info;
-use log::{debug, log_enabled, warn};
+use log::{debug, log_enabled};
 use std::cmp::Ordering;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio::time::{sleep, Duration, Instant};
@@ -175,7 +175,7 @@ impl Proposer {
 
             if (timer_expired || (enough_digests && advance)) && enough_parents {
                 if timer_expired {
-                    warn!("Timer expired for round {}", self.round);
+                    // warn!("Timer expired for round {}", self.round);
                 }
 
                 // Advance to the next round.

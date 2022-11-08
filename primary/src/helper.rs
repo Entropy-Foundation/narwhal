@@ -3,7 +3,7 @@ use crate::primary::PrimaryMessage;
 use bytes::Bytes;
 use config::Committee;
 use crypto::{Digest, PublicKey};
-use log::{error, warn};
+use log::error;
 use network::SimpleSender;
 use store::Store;
 use tokio::sync::mpsc::Receiver;
@@ -45,8 +45,8 @@ impl Helper {
             // get the requestors address.
             let address = match self.committee.primary(&origin) {
                 Ok(x) => x.primary_to_primary,
-                Err(e) => {
-                    warn!("Unexpected certificate request: {}", e);
+                Err(_e) => {
+                    // warn!("Unexpected certificate request: {}", e);
                     continue;
                 }
             };

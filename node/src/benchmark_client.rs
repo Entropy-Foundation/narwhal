@@ -130,13 +130,13 @@ impl Client {
                 tx.resize(self.size, 0u8);
                 let bytes = tx.split().freeze();
                 if let Err(e) = transport.send(bytes).await {
-                    warn!("Failed to send transaction: {}", e);
+                    // warn!("Failed to send transaction: {}", e);
                     break 'main;
                 }
             }
             if now.elapsed().as_millis() > BURST_DURATION as u128 {
                 // NOTE: This log entry is used to compute performance.
-                warn!("Transaction rate too high for this client");
+                // warn!("Transaction rate too high for this client");
             }
             counter += 1;
         }
