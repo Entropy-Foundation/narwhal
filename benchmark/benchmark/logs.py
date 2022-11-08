@@ -98,6 +98,7 @@ class LogParser:
         if search(r'(?:panicked|Error)', log) is not None:
             raise ParseError('Primary(s) panicked')
 
+        print(log)
         tmp = findall(r'(.*Z) .* Created B\d+\([^ ]+\) -> ([^ ]+=)', log)
         tmp = [(d, self._to_posix(t)) for t, d in tmp]
         proposals = self._merge_results([tmp])
@@ -267,4 +268,5 @@ class LogParser:
         tmp += findall(r'\[(.* INFO  hotstuff::committer].*=)', data)
         tmp += findall(r'\[(.* INFO  consensus] Committed.*=)', data)
         tmp += findall(r'\[(.* INFO  hotstuff::core].*=)', data)
+
         return tmp

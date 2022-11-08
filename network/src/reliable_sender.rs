@@ -142,7 +142,7 @@ impl Connection {
         let mut retry = 0;
         loop {
             match TcpStream::connect(self.address).await {
-                Ok(_stream) => {
+                Ok(stream) => {
                     info!("Outgoing connection established with {}", self.address);
 
                     // Reset the delay.
@@ -151,7 +151,8 @@ impl Connection {
 
                     // Try to transmit all messages in the buffer and keep transmitting incoming messages.
                     // The following function only returns if there is an error.
-                    // let error = self.keep_alive(stream).await;
+                    let error = self.keep_alive(stream).await;
+                    println!("{:?}", error);
                     // warn!("{}", error);
                 }
                 Err(_e) => {
