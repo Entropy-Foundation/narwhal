@@ -9,25 +9,25 @@ from benchmark.instance import InstanceManager
 from benchmark.remote import Bench, BenchError
 
 
-@task
-def local(ctx, debug=False):
+def local(ctx, debug=False, concise=True):
     ''' Run benchmarks on localhost '''
     bench_params = {
         'faults': 0,
         'nodes': 4,
         'workers': 1,
-        'rate': 10_000,
+        'rate': 500_000,
         'tx_size': 512,
         'duration': 20,
+        'concise': concise
     }
     node_params = {
-        'timeout_delay': 500,  # ms
-        'header_size': 1_000,  # bytes
+        'timeout_delay': 1000,  # ms
+        'header_size': 10_000,  # bytes
         'max_header_delay': 200,  # ms
         'gc_depth': 50,  # rounds
-        'sync_retry_delay': 10_000,  # ms
+        'sync_retry_delay': 5_000,  # ms
         'sync_retry_nodes': 3,  # number of nodes
-        'batch_size': 500_000,  # bytes
+        'batch_size': 512*50_000,  # bytes
         'max_batch_delay': 200  # ms
     }
     try:
@@ -37,8 +37,9 @@ def local(ctx, debug=False):
         Print.error(e)
 
 
+
 @task
-def create(ctx, nodes=20):
+def create(ctx, nodes=1):
     ''' Create a testbed'''
     try:
         InstanceManager.make().create_instances(nodes)
@@ -56,7 +57,7 @@ def destroy(ctx):
 
 
 @task
-def start(ctx, max=20):
+def start(ctx, max=1):
     ''' Start at most `max` machines per data center '''
     try:
         InstanceManager.make().start_instances(max)
@@ -92,17 +93,18 @@ def install(ctx):
 
 
 @task
-def remote(ctx, debug=False):
+def remote(ctx, debug=False, concise=True):
     ''' Run benchmarks on AWS '''
     bench_params = {
         'faults': 0,
-        'nodes': [100],
+        'nodes': [5],
         'workers': 1,
         'collocate': True,
         'rate': [1_50_000],
         'tx_size': 512,
         'duration': 300,
         'runs': 1,
+        'concise': concise
     }
     node_params = {
         'timeout_delay': 5_000,  # ms
@@ -145,11 +147,10 @@ def kill(ctx):
     except BenchError as e:
         Print.error(e)
 
-
 @task
-def logs(ctx):
+def logs(ctx, concise=True):
     ''' Print a summary of the logs '''
     try:
-        print(LogParser.process('./logs', faults='?').result())
+        print(LogParser.process('./logs', faults='?', concise=concise).result())
     except ParseError as e:
         Print.error(BenchError('Failed to parse logs', e))

@@ -4,7 +4,7 @@ from glob import glob
 from multiprocessing import Pool
 from os.path import join
 from re import findall, search
-from statistics import mean
+from statistics import mean, median
 
 from benchmark.utils import Print
 
@@ -14,13 +14,15 @@ class ParseError(Exception):
 
 
 class LogParser:
-    def __init__(self, clients, primaries, workers, faults=0):
+    def __init__(self, clients, primaries, workers, faults=0, concise=False):
         inputs = [clients, primaries, workers]
         assert all(isinstance(x, list) for x in inputs)
         assert all(isinstance(x, str) for y in inputs for x in y)
         assert all(x for x in inputs)
 
         self.faults = faults
+        self.concise = concise
+
         if isinstance(faults, int):
             self.committee_size = len(primaries) + int(faults)
             self.workers = len(workers) // len(primaries)
@@ -44,8 +46,15 @@ class LogParser:
                 results = p.map(self._parse_primaries, primaries)
         except (ValueError, IndexError, AttributeError) as e:
             raise ParseError(f'Failed to parse nodes\' logs: {e}')
-        proposals, commits = zip(*results) # self.configs, primary_ips
+
+        if self.concise:
+            block_proposals, proposals, block_commits, commits = zip(*results)
+        else:
+            block_proposals, proposals, block_commits, commits, self.configs, primary_ips = zip(*results)
+
+        self.block_proposals = self._merge_results([x.items() for x in block_proposals])
         self.proposals = self._merge_results([x.items() for x in proposals])
+        self.block_commits = self._merge_results([x.items() for x in block_commits])
         self.commits = self._merge_results([x.items() for x in commits])
 
         # Parse the workers logs.
@@ -59,9 +68,9 @@ class LogParser:
             k: v for x in sizes for k, v in x.items() if k in self.commits
         }
 
-        # # Determine whether the primary and the workers are collocated.
-        self.collocate = True
-        #set(primary_ips) == set(workers_ips)
+        if not self.concise:
+            # Determine whether the primary and the workers are collocated.
+            self.collocate = set(primary_ips) == set(workers_ips)
 
         # Check whether clients missed their target rate.
         if self.misses != 0:
@@ -99,15 +108,58 @@ class LogParser:
         if search(r'(?:panicked|Error)', log) is not None:
             raise ParseError('Primary(s) panicked')
 
-        tmp = findall(r'(.*Z) .* Created B\d+\([^ ]+\) -> ([^ ]+=)', log)
+        tmp = findall(r'\[(.*Z) .* Created B\d+\([^ ]+\) -> ([^ ]+=)', log)
         tmp = [(d, self._to_posix(t)) for t, d in tmp]
         proposals = self._merge_results([tmp])
 
-        tmp = findall(r'(.*Z) .* Committed B\d+\([^ ]+\) -> ([^ ]+=)', log)
+        tmp = findall(r'\[(.*Z) .* Committed B\d+\([^ ]+\) -> ([^ ]+=)', log)
         tmp = [(d, self._to_posix(t)) for t, d in tmp]
         commits = self._merge_results([tmp])
 
-        return proposals, commits
+        tmp = findall(r'\[(.*Z) .* Created ([^ ]+): HSB\(.*\)', log)
+        tmp = [(d, self._to_posix(t)) for t, d in tmp]
+        block_proposals = self._merge_results([tmp])
+
+        tmp = findall(r'\[(.*Z) .* Committed ([^ ]+): HSB\(.*\)', log)
+        tmp = [(d, self._to_posix(t)) for t, d in tmp]
+        block_commits = self._merge_results([tmp])
+
+        print(block_commits)
+
+
+        if self.concise:
+            return block_proposals, proposals, block_commits, commits
+        else:
+            configs = {
+                'timeout_delay': int(
+                    search(r'Timeout delay .* (\d+)', log).group(1)
+                ),
+                'header_size': int(
+                    search(r'Header size .* (\d+)', log).group(1)
+                ),
+                'max_header_delay': int(
+                    search(r'Max header delay .* (\d+)', log).group(1)
+                ),
+                'gc_depth': int(
+                    search(r'Garbage collection depth .* (\d+)', log).group(1)
+                ),
+                'sync_retry_delay': int(
+                    search(r'Sync retry delay .* (\d+)', log).group(1)
+                ),
+                'sync_retry_nodes': int(
+                    search(r'Sync retry nodes .* (\d+)', log).group(1)
+                ),
+                'batch_size': int(
+                    search(r'Batch size .* (\d+)', log).group(1)
+                ),
+                'max_batch_delay': int(
+                    search(r'Max batch delay .* (\d+)', log).group(1)
+                ),
+            }
+
+            ip = search(r'booted on (\d+.\d+.\d+.\d+)', log).group(1)
+
+            return block_proposals, proposals, block_commits, commits, configs, ip
 
     def _parse_workers(self, log):
         if search(r'(?:panic|Error)', log) is not None:
@@ -137,6 +189,10 @@ class LogParser:
         tps = bps / self.size[0]
         return tps, bps, duration
 
+    def _block_consensus_latency(self):
+        latency = [c - self.block_proposals[d] for d, c in self.block_commits.items()]
+        return (mean(latency), median(latency)) if latency else 0
+
     def _consensus_latency(self):
         latency = [c - self.proposals[d] for d, c in self.commits.items()]
         return mean(latency) if latency else 0
@@ -163,50 +219,59 @@ class LogParser:
         return mean(latency) if latency else 0
 
     def result(self):
-
-        # timeout_delay = self.configs[0]['timeout_delay']
-        # header_size = self.configs[0]['header_size']
-        # max_header_delay = self.configs[0]['max_header_delay']
-        # gc_depth = self.configs[0]['gc_depth']
-        # sync_retry_delay = self.configs[0]['sync_retry_delay']
-        # sync_retry_nodes = self.configs[0]['sync_retry_nodes']
-        # batch_size = self.configs[0]['batch_size']
-        # max_batch_delay = self.configs[0]['max_batch_delay']
-
-        # block_consensus_latency = self._block_consensus_latency() * 1_000
+        (bcl_mean, bcl_median) = self._block_consensus_latency()
+        block_consensus_latency_mean = bcl_mean * 1_000
+        block_consensus_latency_median = bcl_median * 1_000
         consensus_latency = self._consensus_latency() * 1_000
         consensus_tps, consensus_bps, _ = self._consensus_throughput()
         end_to_end_tps, end_to_end_bps, duration = self._end_to_end_throughput()
         end_to_end_latency = self._end_to_end_latency() * 1_000
+
+        if not self.concise:
+            timeout_delay = self.configs[0]['timeout_delay']
+            header_size = self.configs[0]['header_size']
+            max_header_delay = self.configs[0]['max_header_delay']
+            gc_depth = self.configs[0]['gc_depth']
+            sync_retry_delay = self.configs[0]['sync_retry_delay']
+            sync_retry_nodes = self.configs[0]['sync_retry_nodes']
+            batch_size = self.configs[0]['batch_size']
+            max_batch_delay = self.configs[0]['max_batch_delay']
+
+            config_output = (
+                ' + CONFIG:\n'
+                f' Faults: {self.faults} node(s)\n'
+                f' Committee size: {self.committee_size} node(s)\n'
+                f' Worker(s) per node: {self.workers} worker(s)\n'
+                f' Collocate primary and workers: {self.collocate}\n'
+                f' Input rate: {sum(self.rate):,} tx/s\n'
+                f' Transaction size: {self.size[0]:,} B\n'
+                f' Execution time: {round(duration):,} s\n'
+                '\n'
+                f' Timeout delay: {timeout_delay:,} ms\n'
+                f' Header size: {header_size:,} B\n'
+                f' Max header delay: {max_header_delay:,} ms\n'
+                f' GC depth: {gc_depth:,} round(s)\n'
+                f' Sync retry delay: {sync_retry_delay:,} ms\n'
+                f' Sync retry nodes: {sync_retry_nodes:,} node(s)\n'
+                f' batch size: {batch_size:,} B\n'
+                f' Max batch delay: {max_batch_delay:,} ms\n'
+                '\n'
+            )
+        else:
+            config_output = ''
 
         return (
             '\n'
             '-----------------------------------------\n'
             ' SUMMARY:\n'
             '-----------------------------------------\n'
-            # ' + CONFIG:\n'
-            # f' Faults: {self.faults} node(s)\n'
-            # f' Committee size: {self.committee_size} node(s)\n'
-            # f' Worker(s) per node: {self.workers} worker(s)\n'
-            # f' Collocate primary and workers: {self.collocate}\n'
-            # f' Input rate: {sum(self.rate):,} tx/s\n'
-            # f' Transaction size: {self.size[0]:,} B\n'
-            # f' Execution time: {round(duration):,} s\n'
-            # '\n'
-            # f' Timeout delay: {timeout_delay:,} ms\n'
-            # f' Header size: {header_size:,} B\n'
-            # f' Max header delay: {max_header_delay:,} ms\n'
-            # f' GC depth: {gc_depth:,} round(s)\n'
-            # f' Sync retry delay: {sync_retry_delay:,} ms\n'
-            # f' Sync retry nodes: {sync_retry_nodes:,} node(s)\n'
-            # f' batch size: {batch_size:,} B\n'
-            # f' Max batch delay: {max_batch_delay:,} ms\n'
-            # '\n'
+            f'{config_output}'
             ' + RESULTS:\n'
             f' Consensus TPS: {round(consensus_tps):,} tx/s\n'
             f' Consensus BPS: {round(consensus_bps):,} B/s\n'
             f' Consensus latency: {round(consensus_latency):,} ms\n'
-            # f' Block consensus latency: {round(block_consensus_latency):,} ms\n'
+            f' Block consensus average latency: {round(block_consensus_latency_mean):,} ms\n'
+            f' Block consensus median latency: {round(block_consensus_latency_median):,} ms\n'
             '\n'
             f' End-to-end TPS: {round(end_to_end_tps):,} tx/s\n'
             f' End-to-end BPS: {round(end_to_end_bps):,} B/s\n'
@@ -220,29 +285,39 @@ class LogParser:
             f.write(self.result())
 
     @classmethod
-    def process(cls, directory, faults=0):
+    def process(cls, directory, faults=0, concise=False):
         assert isinstance(directory, str)
 
         clients = []
         for filename in sorted(glob(join(directory, 'client-*.log'))):
             with open(filename, 'r') as f:
                 clients += [f.read()]
-        primaries = []
-        for filename in sorted(glob(join(directory, 'primary-*.log'))):
-            with open(filename, 'r') as f:
-                data = cls.process_file(cls, f.read())
-                primaries += ["\n".join(data)]
-
+        primaries = cls.concat_primaries_files_concise(cls, directory) \
+            if concise else cls.concat_primaries_files_full(cls, directory)
         workers = []
         for filename in sorted(glob(join(directory, 'worker-*.log'))):
             with open(filename, 'r') as f:
                 workers += [f.read()]
 
-        return cls(clients, primaries, workers, faults=faults)
+        return cls(clients, primaries, workers, faults=faults, concise=concise)
 
-    def process_file(self, data):
+    def concat_primaries_files_full(self, directory):
+        primaries = []
+        for filename in sorted(glob(join(directory, 'primary-*.log'))):
+            with open(filename, 'r') as f:
+                primaries += [f.read()]
+        return primaries
 
-        tmp = findall(r'\[(.* INFO  primary::proposer].*=)', data)
-        tmp += findall(r'\[(.* INFO  hotstuff::committer].*=)', data)
-        tmp += findall(r'\[(.* INFO  hotstuff::core].*=)', data)
-        return tmp
+    def concat_primaries_files_concise(self, directory):
+        primaries = []
+        for filename in sorted(glob(join(directory, 'primary-*.log'))):
+            with open(filename, 'r') as f:
+                file = f.read()
+                # Parse out only the lines necessary for computing our required
+                # statistics to keep things efficient.
+                data = findall(r'(\[.* INFO  primary::proposer\].*)', file)
+                data += findall(r'(\[.* INFO  hotstuff::committer\].*)', file)
+                data += findall(r'(\[.* INFO  hotstuff::proposer\].*)', file)
+                data += findall(r'(\[.* INFO  hotstuff::core\].*)', file)
+                primaries += ["\n".join(data) + "\n"]
+        return primaries

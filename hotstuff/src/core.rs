@@ -12,7 +12,7 @@ use bytes::Bytes;
 use config::Committee;
 use crypto::Hash as _;
 use crypto::{PublicKey, SignatureService};
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use network::SimpleSender;
 use primary::Certificate;
 use std::cmp::max;
@@ -144,7 +144,9 @@ impl Core {
 
         // Send all the newly committed blocks to the node's application layer.
         while let Some(block) = to_commit.pop_back() {
-            debug!("Committed {:?}", block);
+            if block.round > 0 {
+                info!("Committed {:?}", block);
+            }
 
             // Output the block to the top-level application.
             if let Err(e) = self.tx_output.send(block.clone()).await {
@@ -185,7 +187,7 @@ impl Core {
             self.signature_service.clone(),
         )
         .await;
-        debug!("Created {:?}", timeout);
+        info!("Created {:?}", timeout);
 
         // Reset the timer.
         self.timer.reset();
@@ -337,7 +339,7 @@ impl Core {
 
         // See if we can vote for this block.
         if let Some(vote) = self.make_vote(block).await {
-            debug!("Created {:?}", vote);
+            info!("Created {:?}", vote);
             let next_leader = self.leader_elector.get_leader(self.round + 1);
             if next_leader == self.name {
                 self.handle_vote(&vote).await?;
